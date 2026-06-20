@@ -1,23 +1,32 @@
 '''
 Archivo principal del proyecto Defensa y Asalto de Base.
-Por ahora abre la ventana y dibuja el tablero del juego.
-Falta conectar el login, la seleccion de faccion y el resto
-del flujo de una partida.
+Primero pide login/registro, y solo si alguien inicia sesion
+correctamente se abre la ventana del juego con el tablero.
+Falta conectar la seleccion de faccion y el resto del flujo
+de una partida.
 '''
 
 import tkinter as tk
 import config
 import tablero
+import controles
+from interfaz.ventana_login import abrir_ventana
 
 
 def main():
     '''
     #E: no recibe parametros
-    #S: crea la ventana principal, el canvas del tablero, y dibuja el mapa
+    #S: muestra el login, y si alguien entra, abre la ventana del
+        juego con el canvas del tablero y las teclas activas
     #R: no retorna nada
     '''
+    jugador_actual = abrir_ventana()
+
+    if jugador_actual is None:
+        return
+
     ventana = tk.Tk()
-    ventana.title(config.titulo_ventana)
+    ventana.title(config.titulo_ventana + " - " + jugador_actual.usuario)
     ventana.geometry(f"{config.ancho_ventana}x{config.alto_ventana}")
     ventana.configure(bg="#0d0d12")
 
@@ -35,6 +44,11 @@ def main():
 
     matriz_tablero = tablero.crear_tablero()
     tablero.dibujar_tablero(canvas, matriz_tablero)
+
+    def tecla_presionada(evento):
+        controles.procesar_tecla(evento.char)
+
+    ventana.bind("<Key>", tecla_presionada)
 
     ventana.mainloop()
 
