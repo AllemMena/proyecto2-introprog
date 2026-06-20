@@ -53,33 +53,36 @@ y "Ajustes" (volumen y pantalla completa).
 
 ## Como se juega
 
-Dentro del juego, estas teclas seleccionan que se va a colocar:
+El juego es por turnos: en cada momento solo juega un jugador, y el
+panel de la derecha indica claramente de quien es el turno (en dorado
+el Defensor, en morado el Atacante).
 
-| Tecla | Selecciona    |
-|-------|---------------|
-| 1     | Torre Basica  |
-| 2     | Torre Pesada  |
-| 3     | Torre Magica  |
-| Q     | Soldado       |
-| W     | Tanque        |
-| E     | Unidad Rapida |
-| M     | Muro          |
+**Turno del Defensor (fase de construccion):**
+Solo el Defensor juega. El panel muestra sus controles. Presiona la
+tecla de lo que quieres colocar y haz clic en el mapa:
 
-Fases de una ronda:
+| Tecla | Coloca        | Costo |
+|-------|---------------|-------|
+| 1     | Torre Basica  | 50    |
+| 2     | Torre Pesada  | 120   |
+| 3     | Torre Magica  | 100   |
+| M     | Muro          | 30    |
 
-- **Construccion**: el Defensor selecciona una torre o un muro con el
-  teclado y hace clic en el mapa para colocarlo. Cada cosa cuesta dinero.
-- **Ataque**: con el boton "Pasar a ataque", el Atacante selecciona un
-  tipo de unidad y hace clic en una fila para comprarla. La unidad aparece
-  en el lado izquierdo.
-- **Combate**: con "Iniciar combate" y luego "Siguiente turno", las torres
-  disparan a las unidades en su alcance y las unidades avanzan o atacan lo
-  que tengan en su camino (torre, muro o base).
+Cuando termines, presiona "Terminar construccion".
 
-Una ronda la gana el Defensor si elimina todas las unidades del Atacante,
-o el Atacante si la vida de la base llega a cero. El primero en ganar 3
-rondas gana la partida, y esa victoria se guarda en su cuenta para el
-ranking.
+**Turno del Atacante (fase de ataque):**
+Solo el Atacante juega. Presiona la tecla de la unidad que quieres y
+haz clic en una fila para que aparezca ahi:
+
+| Tecla | Compra        | Costo |
+|-------|---------------|-------|
+| Q     | Soldado       | 40    |
+| W     | Tanque        | 110   |
+| E     | Unidad Rapida | 60    |
+
+Debes comprar al menos una unidad. Cuando termines, presiona
+"Empezar combate".
+
 
 ## Ajustes
 
@@ -106,7 +109,7 @@ datos/                   Archivos JSON (jugadores, facciones)
 assets/                  Imagenes y sonidos que usa el juego
   facciones/             Imagenes de cada faccion (base, torre, unidad, muro)
   mapa/                  Imagenes de fondo del mapa por faccion
-  ui/                    Imagenes de los botones
+  ui/                    Imagenes de los botones (en 3 tamanos)
   iconos/                Icono de la moneda
   sonidos/               Efectos de sonido y musica
 interfaz/                Ventanas de Tkinter

@@ -22,8 +22,8 @@ def conseguir_jugadores_y_roles():
     #E: no recibe parametros
     #S: pide el login de los dos jugadores (revisando que no sea la
         misma cuenta) y les asigna el rol contrario entre ellos
-    #R: retorna una tupla (jugador_defensor, jugador_atacante), o
-        (None, None) si alguien cerro una ventana sin iniciar sesion
+    #R: retorna (jugador_defensor, jugador_atacante), o (None, None)
+        si alguien cancela
     '''
     jugador1 = abrir_ventana("Jugador 1 - Inicia sesion")
     if jugador1 is None:
@@ -45,7 +45,7 @@ def conseguir_jugadores_y_roles():
             return None, None
 
         if candidato.usuario == jugador1.usuario:
-            messagebox.showerror("Error", "El jugador 2 debe usar una cuenta distinta a la del jugador 1.")
+            messagebox.showerror("Error", "El jugador 2 debe usar una cuenta distinta.")
         else:
             jugador2 = candidato
 
@@ -59,43 +59,64 @@ def conseguir_facciones(jugador_defensor, jugador_atacante, datos_facciones):
     '''
     #E: jugador_defensor (Jugador), jugador_atacante (Jugador),
         datos_facciones (dict)
-    #S: deja que el defensor elija primero su faccion, y al atacante
-        le muestra solo las que quedan disponibles
-    #R: retorna una tupla (faccion_defensor, faccion_atacante)
+    #S: el defensor elige primero su faccion, y al atacante le quedan
+        solo las que no eligio el defensor
+    #R: retorna (faccion_defensor, faccion_atacante)
     '''
-    todas_las_facciones = []
-    for nombre_faccion in datos_facciones:
-        todas_las_facciones.append(nombre_faccion)
+    todas = []
+    for nombre in datos_facciones:
+        todas.append(nombre)
 
-    faccion_defensor = elegir_faccion(jugador_defensor.usuario, todas_las_facciones, datos_facciones)
+    faccion_defensor = elegir_faccion(jugador_defensor.usuario, todas, datos_facciones)
+    if faccion_defensor is None:
+        return None, None
 
-    facciones_restantes = []
-    for nombre_faccion in todas_las_facciones:
-        if nombre_faccion != faccion_defensor:
-            facciones_restantes.append(nombre_faccion)
+    restantes = []
+    for nombre in todas:
+        if nombre != faccion_defensor:
+            restantes.append(nombre)
 
-    faccion_atacante = elegir_faccion(jugador_atacante.usuario, facciones_restantes, datos_facciones)
-
+    faccion_atacante = elegir_faccion(jugador_atacante.usuario, restantes, datos_facciones)
     return faccion_defensor, faccion_atacante
 
 
 def main():
     '''
     #E: no recibe parametros
-    #S: corre todo el flujo: login de los dos jugadores, roles,
-        facciones, y abre la ventana del juego completa
+    #S: corre el juego en bucle: cada vuelta es una partida completa
+        (login, roles, facciones y juego). Si los jugadores eligen
+        "volver al menu", se repite; si cancelan el login, termina
     #R: no retorna nada
     '''
-    jugador_defensor, jugador_atacante = conseguir_jugadores_y_roles()
-    if jugador_defensor is None:
-        return
+    seguir = True
+    while seguir:
+        jugador_defensor, jugador_atacante = conseguir_jugadores_y_roles()
+        if jugador_defensor is None:
+            return
 
-    datos_facciones = facciones_mod.cargar_facciones()
-    faccion_defensor, faccion_atacante = conseguir_facciones(jugador_defensor, jugador_atacante, datos_facciones)
-    if faccion_defensor is None or faccion_atacante is None:
-        return
+        datos_facciones = facciones_mod.cargar_facciones()
+        faccion_defensor, faccion_atacante = conseguir_facciones(
+            jugador_defensor, jugador_atacante, datos_facciones)
+        if faccion_defensor is None or faccion_atacante is None:
+            return
 
+        # abrir_ventana_juego devuelve True si se pidio volver al menu
+        seguir = abrir_ventana_juego(jugador_defensor, jugador_atacante,
+                                     faccion_defensor, faccion_atacante, datos_facciones)
+
+
+def abrir_ventana_juego(jugador_defensor, jugador_atacante,
+                        faccion_defensor, faccion_atacante, datos_facciones):
+    '''
+    #E: los dos jugadores (Jugador), sus dos facciones (str) y
+        datos_facciones (dict)
+    #S: crea la ventana de la partida con el tablero, el panel de
+        informacion por turnos, los controles del jugador activo, y
+        los botones para avanzar de fase, reiniciar o volver al menu
+    #R: no retorna nada
+    '''
     partida_actual = partida_mod.Partida()
+    controles.limpiar_seleccion()
 
     ventana = tk.Toplevel(recursos.obtener_raiz())
     ventana.title(config.titulo_ventana)
@@ -112,8 +133,6 @@ def main():
                        bg=config.color_canvas, highlightthickness=0)
     canvas.pack(side="left", padx=20, pady=20)
 
-    # Panel lateral, tambien un canvas para poder dibujar el icono de
-    # moneda y los botones de imagen con buena estetica.
     ancho_panel = config.ancho_ventana - ancho_tablero - 60
     panel = tk.Canvas(ventana, width=ancho_panel, height=alto_tablero,
                       bg=config.color_fondo, highlightthickness=0)
@@ -121,76 +140,227 @@ def main():
 
     icono_moneda = recursos.cargar_imagen(os.path.join(config.ruta_iconos_img, "moneda.png"))
 
-    def actualizar_panel():
+    # Guardamos aqui los botones que cambian segun la fase para poder
+    # volver a dibujarlos cada vez.
+    estado = {"volver_al_menu": [False]}
+
+    def texto_turno():
         '''
         #E: no recibe parametros
-        #S: vuelve a dibujar todo el panel lateral con la informacion
-            actual de la partida: jugadores, fase, dinero, vida y ronda
+        #S: arma el texto grande que dice de quien es el turno segun la fase
+        #R: retorna (titulo, color)
+        '''
+        if partida_actual.fase == "construccion":
+            return "TURNO DEL DEFENSOR", config.color_dorado
+        elif partida_actual.fase == "ataque":
+            return "TURNO DEL ATACANTE", config.color_morado
+        else:
+            return "COMBATE EN CURSO", config.color_texto
+
+    def dibujar_panel():
+        '''
+        #E: no recibe parametros
+        #S: dibuja todo el panel lateral: de quien es el turno, el
+            dinero y vida relevantes, la lista de controles del jugador
+            activo, y lo que tiene seleccionado
         #R: no retorna nada
         '''
         panel.delete("info")
         cx = ancho_panel // 2
 
-        # Jugadores y facciones
-        panel.create_text(cx, 20, text="Defensor", fill=config.color_dorado,
-                          font=(config.fuente_normal, 11, "bold"), tags="info")
-        panel.create_text(cx, 40, text=jugador_defensor.usuario + " - " + faccion_defensor,
-                          fill=config.color_texto, font=(config.fuente_normal, 10), tags="info")
-        panel.create_text(cx, 64, text="Atacante", fill=config.color_morado,
-                          font=(config.fuente_normal, 11, "bold"), tags="info")
-        panel.create_text(cx, 84, text=jugador_atacante.usuario + " - " + faccion_atacante,
-                          fill=config.color_texto, font=(config.fuente_normal, 10), tags="info")
+        # --- Cabecera: de quien es el turno ---
+        titulo, color = texto_turno()
+        panel.create_text(cx, 26, text=titulo, fill=color,
+                          font=(config.fuente_normal, 15, "bold"), tags="info")
 
-        panel.create_line(20, 108, ancho_panel - 20, 108, fill=config.color_borde, tags="info")
+        panel.create_text(cx, 52, text="Ronda " + str(partida_actual.ronda_actual)
+                          + "   (Def " + str(partida_actual.victorias_defensor)
+                          + " - Atk " + str(partida_actual.victorias_atacante) + ")",
+                          fill=config.color_texto_suave,
+                          font=(config.fuente_normal, 10), tags="info")
 
-        # Fase
-        panel.create_text(cx, 132, text="Fase: " + partida_actual.fase,
-                          fill=config.color_texto, font=(config.fuente_normal, 13, "bold"), tags="info")
+        panel.create_line(20, 74, ancho_panel - 20, 74, fill=config.color_borde, tags="info")
 
-        # Dinero con icono de moneda
+        # --- Informacion segun la fase ---
+        if partida_actual.fase == "construccion":
+            dibujar_info_defensor(cx)
+        elif partida_actual.fase == "ataque":
+            dibujar_info_atacante(cx)
+        else:
+            dibujar_info_combate(cx)
+
+    def dibujar_dinero(cx, y, etiqueta, cantidad, color):
+        '''
+        #E: cx (int) centro, y (int) altura, etiqueta (str), cantidad
+            (int) de dinero, color (str)
+        #S: dibuja el icono de moneda y el texto del dinero, sin que se
+            encimen
+        #R: no retorna nada
+        '''
         if icono_moneda is not None:
-            panel.create_image(cx - 95, 168, image=icono_moneda, tags="info")
-            panel.create_image(cx - 95, 196, image=icono_moneda, tags="info")
-        panel.create_text(cx - 75, 168, anchor="w", text="Defensor: " + str(partida_actual.dinero_defensor),
-                          fill=config.color_dorado, font=(config.fuente_normal, 11), tags="info")
-        panel.create_text(cx - 75, 196, anchor="w", text="Atacante: " + str(partida_actual.dinero_atacante),
-                          fill=config.color_morado, font=(config.fuente_normal, 11), tags="info")
+            panel.create_image(40, y, image=icono_moneda, tags="info")
+        panel.create_text(58, y, anchor="w", text=etiqueta + ": " + str(cantidad),
+                          fill=color, font=(config.fuente_normal, 12, "bold"), tags="info")
 
-        # Vida de la base
-        panel.create_text(cx, 228, text="Vida de la base: " + str(partida_actual.vida_base),
-                          fill=config.color_texto, font=(config.fuente_normal, 11), tags="info")
+    def dibujar_lista_controles(cx, y_inicio, lista, color):
+        '''
+        #E: cx (int), y_inicio (int) donde empieza la lista, lista de
+            tuplas (tecla, nombre, costo), color (str) del titulo
+        #S: dibuja cada control en su propia linea: [TECLA] Nombre - costo
+        #R: retorna la y final usada
+        '''
+        y = y_inicio
+        for tecla, nombre, costo in lista:
+            # Recuadro de la tecla
+            panel.create_rectangle(24, y - 12, 48, y + 12, fill=config.color_panel_claro,
+                                   outline=color, tags="info")
+            panel.create_text(36, y, text=tecla, fill=config.color_texto,
+                             font=(config.fuente_normal, 11, "bold"), tags="info")
+            # Nombre y costo
+            panel.create_text(58, y, anchor="w", text=nombre, fill=config.color_texto,
+                             font=(config.fuente_normal, 11), tags="info")
+            panel.create_text(ancho_panel - 24, y, anchor="e", text=str(costo),
+                             fill=config.color_dorado, font=(config.fuente_normal, 11), tags="info")
+            y = y + 34
+        return y
 
-        # Ronda y marcador
-        panel.create_text(cx, 256, text="Ronda " + str(partida_actual.ronda_actual),
-                          fill=config.color_texto, font=(config.fuente_normal, 11, "bold"), tags="info")
-        panel.create_text(cx, 278, text="Defensor " + str(partida_actual.victorias_defensor)
-                          + "  -  " + str(partida_actual.victorias_atacante) + " Atacante",
-                          fill=config.color_texto_suave, font=(config.fuente_normal, 10), tags="info")
-
-        # Que esta seleccionado
+    def dibujar_seleccion(cx, y):
+        '''
+        #E: cx (int), y (int)
+        #S: muestra que tiene seleccionado el jugador en este momento
+        #R: no retorna nada
+        '''
         seleccion = controles.seleccion_actual
         texto_sel = "nada" if seleccion is None else seleccion
-        panel.create_text(cx, 308, text="Seleccionado: " + texto_sel,
-                          fill="#5ab0d8", font=(config.fuente_normal, 10), tags="info")
+        panel.create_text(cx, y, text="Seleccionado: " + texto_sel,
+                          fill="#5ab0d8", font=(config.fuente_normal, 11, "bold"), tags="info")
 
-        panel.create_line(20, 330, ancho_panel - 20, 330, fill=config.color_borde, tags="info")
+    def dibujar_info_defensor(cx):
+        '''
+        #E: cx (int) centro del panel
+        #S: muestra el dinero del defensor, sus controles y como jugar
+        #R: no retorna nada
+        '''
+        dibujar_dinero(cx, 100, "Tu dinero", partida_actual.dinero_defensor, config.color_dorado)
+        panel.create_text(cx, 130, text="Construye tu defensa", fill=config.color_texto,
+                          font=(config.fuente_normal, 11), tags="info")
+        panel.create_text(cx, 150, text="Elige con la tecla y haz clic en el mapa",
+                          fill=config.color_texto_suave, font=(config.fuente_normal, 9), tags="info")
+
+        y_fin = dibujar_lista_controles(cx, 185, controles.lista_controles_defensor(),
+                                        config.color_dorado)
+        dibujar_seleccion(cx, y_fin + 6)
+
+    def dibujar_info_atacante(cx):
+        '''
+        #E: cx (int) centro del panel
+        #S: muestra el dinero del atacante, sus controles y como jugar
+        #R: no retorna nada
+        '''
+        dibujar_dinero(cx, 100, "Tu dinero", partida_actual.dinero_atacante, config.color_morado)
+        panel.create_text(cx, 130, text="Compra tus unidades", fill=config.color_texto,
+                          font=(config.fuente_normal, 11), tags="info")
+        panel.create_text(cx, 150, text="Elige con la tecla y haz clic en una fila",
+                          fill=config.color_texto_suave, font=(config.fuente_normal, 9), tags="info")
+
+        y_fin = dibujar_lista_controles(cx, 185, controles.lista_controles_atacante(),
+                                        config.color_morado)
+        dibujar_seleccion(cx, y_fin + 6)
+
+    def dibujar_info_combate(cx):
+        '''
+        #E: cx (int) centro del panel
+        #S: durante el combate muestra la vida de la base y el dinero de
+            los dos, ya que aqui no se compra ni se construye
+        #R: no retorna nada
+        '''
+        panel.create_text(cx, 104, text="Vida de la base", fill=config.color_texto,
+                          font=(config.fuente_normal, 11), tags="info")
+        panel.create_text(cx, 128, text=str(partida_actual.vida_base), fill=config.color_dorado,
+                          font=(config.fuente_normal, 20, "bold"), tags="info")
+
+        unidades_vivas = 0
+        for unidad in partida_actual.unidades:
+            if unidad.esta_viva():
+                unidades_vivas = unidades_vivas + 1
+        panel.create_text(cx, 168, text="Unidades atacantes vivas: " + str(unidades_vivas),
+                          fill=config.color_morado, font=(config.fuente_normal, 11), tags="info")
+
+        panel.create_text(cx, 205, text="Presiona Siguiente turno", fill=config.color_texto_suave,
+                          font=(config.fuente_normal, 10), tags="info")
+        panel.create_text(cx, 225, text="para resolver el combate", fill=config.color_texto_suave,
+                          font=(config.fuente_normal, 10), tags="info")
 
     def redibujar():
         '''
         #E: no recibe parametros
-        #S: vuelve a dibujar el tablero con las imagenes del defensor,
-            las unidades con las del atacante, y refresca el panel
+        #S: dibuja el tablero (con las imagenes del defensor) y el panel.
+            Las unidades del atacante solo se muestran cuando ya no es la
+            fase de construccion (asi cada jugador ve solo lo suyo)
         #R: no retorna nada
         '''
         tablero.dibujar_tablero(canvas, partida_actual.tablero, faccion_defensor, datos_facciones)
-        tablero.dibujar_unidades(canvas, partida_actual.unidades, faccion_atacante, datos_facciones)
-        actualizar_panel()
+        if partida_actual.fase != "construccion":
+            tablero.dibujar_unidades(canvas, partida_actual.unidades, faccion_atacante, datos_facciones)
+        dibujar_panel()
+        dibujar_botones_fase()
+
+    def mapa_pieza_a_imagen(seleccion):
+        '''
+        #E: seleccion (str) tipo seleccionado por el jugador
+        #S: traduce el tipo seleccionado al nombre de archivo de imagen
+            que le corresponde dentro de la carpeta de la faccion
+        #R: retorna "torre", "muro" o "unidad", o None si no aplica
+        '''
+        if seleccion in ("basica", "pesada", "magica"):
+            return "torre"
+        elif seleccion == "muro":
+            return "muro"
+        elif seleccion in ("soldado", "tanque", "rapida"):
+            return "unidad"
+        return None
+
+    def mover_mouse_en_canvas(evento):
+        '''
+        #E: evento de Tkinter con la posicion actual del mouse
+        #S: si hay algo seleccionado, dibuja sobre el tablero una vista
+            previa de donde se va a colocar: en construccion resalta la
+            casilla exacta, en ataque resalta toda la fila (porque ahi
+            se compra en cualquier punto de la fila)
+        #R: no retorna nada
+        '''
+        canvas.delete("vista_previa")
+
+        seleccion = controles.seleccion_actual
+        if seleccion is None or partida_actual.fase == "combate":
+            return
+
+        columna = evento.x // config.tamano_casilla
+        fila = evento.y // config.tamano_casilla
+        if fila < 0 or fila >= config.filas_mapa or columna < 0 or columna >= config.columnas_mapa:
+            return
+
+        nombre_pieza = mapa_pieza_a_imagen(seleccion)
+        if nombre_pieza is None:
+            return
+
+        if partida_actual.fase == "construccion":
+            carpeta = datos_facciones[faccion_defensor]["carpeta_assets"]
+            libre = partida_actual.tablero[fila][columna] is None
+            tablero.dibujar_resaltado_casilla(canvas, fila, columna, config.color_dorado, libre)
+            if libre:
+                tablero.dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_pieza, True)
+
+        elif partida_actual.fase == "ataque":
+            carpeta = datos_facciones[faccion_atacante]["carpeta_assets"]
+            tablero.dibujar_resaltado_fila(canvas, fila, config.color_morado)
+            tablero.dibujar_vista_previa_pieza(canvas, fila, 0, carpeta, nombre_pieza, True)
 
     def guardar_resultado_partida(ganador):
         '''
         #E: ganador (str), "defensor" o "atacante"
-        #S: le suma la victoria al jugador que tenia ese rol, y guarda
-            el cambio de los dos jugadores en el archivo
+        #S: suma la victoria al jugador del rol ganador y guarda los dos
+            jugadores en el archivo
         #R: no retorna nada
         '''
         if ganador == "defensor":
@@ -205,10 +375,9 @@ def main():
 
     def clic_en_canvas(evento):
         '''
-        #E: evento (de Tkinter), con la posicion x, y del clic
-        #S: calcula la fila y columna del clic y, segun la fase y lo
-            que este seleccionado, coloca torre/muro o compra unidad.
-            Reproduce un sonido segun si la accion se pudo o no
+        #E: evento de Tkinter con la posicion del clic
+        #S: en construccion coloca torre/muro; en ataque compra unidad.
+            En combate, el clic en el mapa no hace nada
         #R: no retorna nada
         '''
         columna = evento.x // config.tamano_casilla
@@ -217,21 +386,21 @@ def main():
         if fila < 0 or fila >= config.filas_mapa or columna < 0 or columna >= config.columnas_mapa:
             return
 
-        tipo_seleccionado = controles.seleccion_actual
-        if tipo_seleccionado is None:
+        seleccion = controles.seleccion_actual
+        if seleccion is None:
             return
 
         exito = False
 
         if partida_actual.fase == "construccion":
-            if tipo_seleccionado == "muro":
+            if seleccion == "muro":
                 exito = partida_actual.colocar_muro(fila, columna)
-            elif tipo_seleccionado in ("basica", "pesada", "magica"):
-                exito = partida_actual.colocar_torre(tipo_seleccionado, fila, columna)
+            elif seleccion in ("basica", "pesada", "magica"):
+                exito = partida_actual.colocar_torre(seleccion, fila, columna)
 
         elif partida_actual.fase == "ataque":
-            if tipo_seleccionado in ("soldado", "tanque", "rapida"):
-                exito = partida_actual.comprar_unidad(tipo_seleccionado, fila)
+            if seleccion in ("soldado", "tanque", "rapida"):
+                exito = partida_actual.comprar_unidad(seleccion, fila)
 
         if exito:
             recursos.reproducir_sonido("colocar")
@@ -241,29 +410,72 @@ def main():
         redibujar()
 
     def tecla_presionada(evento):
-        controles.procesar_tecla(evento.char)
-        actualizar_panel()
+        '''
+        #E: evento de Tkinter con la tecla presionada
+        #S: actualiza la seleccion segun la fase, refresca el panel, y
+            vuelve a dibujar la vista previa en la posicion actual del
+            mouse (asi se ve de inmediato la nueva pieza elegida)
+        #R: no retorna nada
+        '''
+        controles.procesar_tecla(evento.char, partida_actual.fase)
+        dibujar_panel()
 
-    def pasar_a_ataque():
+        x_pantalla, y_pantalla = ventana.winfo_pointerxy()
+        x_relativo = x_pantalla - canvas.winfo_rootx()
+        y_relativo = y_pantalla - canvas.winfo_rooty()
+
+        evento_simulado = type("EventoSimulado", (), {"x": x_relativo, "y": y_relativo})()
+        mover_mouse_en_canvas(evento_simulado)
+
+    # ====================================================
+    # CAMBIOS DE FASE (con validacion)
+    # ====================================================
+    def terminar_construccion():
+        '''
+        #E: no recibe parametros
+        #S: pasa de construccion a ataque, limpia la seleccion para que
+            el atacante empiece de cero
+        #R: no retorna nada
+        '''
         partida_actual.fase = "ataque"
+        controles.limpiar_seleccion()
         recursos.reproducir_sonido("click")
         redibujar()
 
-    def iniciar_combate():
+    def terminar_ataque():
+        '''
+        #E: no recibe parametros
+        #S: no deja pasar a combate si el atacante no compro ninguna
+            unidad; si compro al menos una, pasa a la fase de combate
+        #R: no retorna nada
+        '''
+        hay_unidades = len(partida_actual.unidades) > 0
+        if not hay_unidades:
+            recursos.reproducir_sonido("error")
+            messagebox.showinfo("Espera", "El atacante debe comprar al menos una unidad antes del combate.")
+            return
+
         partida_actual.fase = "combate"
+        controles.limpiar_seleccion()
         recursos.reproducir_sonido("click")
         redibujar()
 
     def siguiente_turno():
         '''
-        #E: no recibe parametros (se llama desde el boton)
-        #S: avanza un turno de combate, redibuja, y revisa si la ronda
-            o la partida completa terminaron, con sus sonidos
+        #E: no recibe parametros
+        #S: solo funciona en fase de combate. Avanza un turno, suena el
+            disparo y la destruccion si murio alguien, y revisa si la
+            ronda o la partida terminaron
         #R: no retorna nada
         '''
+        if partida_actual.fase != "combate":
+            recursos.reproducir_sonido("error")
+            messagebox.showinfo("Espera", "Primero termina la construccion y la fase de ataque.")
+            return
+
         vivas_antes = 0
-        for u in partida_actual.unidades:
-            if u.esta_viva():
+        for unidad in partida_actual.unidades:
+            if unidad.esta_viva():
                 vivas_antes = vivas_antes + 1
 
         partida_actual.avanzar_turno_combate()
@@ -271,8 +483,8 @@ def main():
         redibujar()
 
         vivas_despues = 0
-        for u in partida_actual.unidades:
-            if u.esta_viva():
+        for unidad in partida_actual.unidades:
+            if unidad.esta_viva():
                 vivas_despues = vivas_despues + 1
         if vivas_despues < vivas_antes:
             recursos.reproducir_sonido("destruccion")
@@ -282,44 +494,99 @@ def main():
             recursos.reproducir_sonido("victoria")
             messagebox.showinfo("Ronda terminada", "Gano la ronda: " + ganador_ronda)
             partida_actual.iniciar_nueva_ronda(ganador_ronda)
+            controles.limpiar_seleccion()
 
             ganador_partida = partida_actual.hay_ganador_de_partida()
             if ganador_partida is not None:
                 if ganador_partida == "defensor":
-                    nombre_ganador = jugador_defensor.usuario
+                    nombre = jugador_defensor.usuario
                 else:
-                    nombre_ganador = jugador_atacante.usuario
-
+                    nombre = jugador_atacante.usuario
                 messagebox.showinfo("Partida terminada",
-                                    "Gano la partida: " + nombre_ganador + " (" + ganador_partida + ")")
+                                    "Gano: " + nombre + " (" + ganador_partida + ")")
                 guardar_resultado_partida(ganador_partida)
 
             redibujar()
 
+    def reiniciar_partida():
+        '''
+        #E: no recibe parametros
+        #S: pregunta si esta seguro y, si acepta, deja la partida como
+            nueva desde la ronda 1
+        #R: no retorna nada
+        '''
+        if messagebox.askyesno("Reiniciar", "Seguro que quieres reiniciar la partida desde cero?"):
+            partida_actual.reiniciar()
+            controles.limpiar_seleccion()
+            redibujar()
+
+    def volver_al_menu():
+        '''
+        #E: no recibe parametros
+        #S: pregunta si esta seguro y, si acepta, cierra la ventana de
+            juego para regresar al menu principal
+        #R: no retorna nada
+        '''
+        if messagebox.askyesno("Volver al menu", "Seguro que quieres salir al menu principal?"):
+            estado["volver_al_menu"][0] = True
+            ventana.destroy()
+
     def abrir_ajustes():
         mostrar_ajustes(ventana)
 
-    # --- Botones del panel (imagenes en el canvas del panel) ---
-    base_y = 365
-    BotonImagen(panel, ancho_panel // 2, base_y, "Pasar a ataque", pasar_a_ataque,
-                color="azul", ancho=220, tam_fuente=12)
-    BotonImagen(panel, ancho_panel // 2, base_y + 60, "Iniciar combate", iniciar_combate,
-                color="rojo", ancho=220, tam_fuente=12)
-    BotonImagen(panel, ancho_panel // 2, base_y + 120, "Siguiente turno", siguiente_turno,
-                color="verde", ancho=220, tam_fuente=12)
-    BotonImagen(panel, ancho_panel // 2, base_y + 195, "Ajustes", abrir_ajustes,
-                color="gris", ancho=160, tam_fuente=11)
+    # ====================================================
+    # BOTONES (cambian segun la fase)
+    # ====================================================
+    def dibujar_botones_fase():
+        '''
+        #E: no recibe parametros
+        #S: borra los botones anteriores y dibuja los que correspondan a
+            la fase actual, mas los botones fijos de reiniciar, ajustes
+            y menu
+        #R: no retorna nada
+        '''
+        panel.delete("boton")
+        cx = ancho_panel // 2
+        # Zona de botones de accion principal (segun fase)
+        y_accion = 410
+
+        if partida_actual.fase == "construccion":
+            crear_boton(cx, y_accion, "Terminar construccion", terminar_construccion, "azul")
+        elif partida_actual.fase == "ataque":
+            crear_boton(cx, y_accion, "Empezar combate", terminar_ataque, "rojo")
+        else:
+            crear_boton(cx, y_accion, "Siguiente turno", siguiente_turno, "verde")
+
+        # Botones fijos abajo, con suficiente separacion
+        crear_boton(cx, 482, "Reiniciar partida", reiniciar_partida, "gris", ancho=200, tam=11)
+        crear_boton(cx - 62, 548, "Menu", volver_al_menu, "gris", ancho=112, tam=10)
+        crear_boton(cx + 62, 548, "Ajustes", abrir_ajustes, "gris", ancho=112, tam=10)
+
+    def crear_boton(x, y, texto, accion, color, ancho=220, tam=12):
+        '''
+        #E: x, y (int) centro del boton, texto (str), accion (funcion),
+            color (str), ancho (int), tam (int) de la fuente
+        #S: crea un BotonImagen marcado con la etiqueta "boton" para
+            poder borrarlo al cambiar de fase
+        #R: no retorna nada
+        '''
+        boton = BotonImagen(panel, x, y, texto, accion, color=color, ancho=ancho, tam_fuente=tam)
+        panel.addtag_withtag("boton", boton.id_imagen)
+        panel.addtag_withtag("boton", boton.id_texto)
 
     canvas.bind("<Button-1>", clic_en_canvas)
+    canvas.bind("<Motion>", mover_mouse_en_canvas)
+    canvas.bind("<Leave>", lambda evento: canvas.delete("vista_previa"))
     ventana.bind("<Key>", tecla_presionada)
 
     redibujar()
     ventana.wait_window()
     recursos.detener_musica()
 
+    return estado["volver_al_menu"][0]
+
 
 if __name__ == "__main__":
     main()
-    # Al terminar todo el juego, cerrar la ventana raiz oculta
     raiz = recursos.obtener_raiz()
     raiz.destroy()

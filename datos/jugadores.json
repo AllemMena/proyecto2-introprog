@@ -3,11 +3,11 @@
         "usuario": "Allem",
         "contrasena": "contrase\u00f1a",
         "victorias_defensor": 0,
-        "victorias_atacante": 1
+        "victorias_atacante": 0
     },
     "Joel": {
         "usuario": "Joel",
-        "contrasena": "contra",
+        "contrasena": "contrase\u00f1a",
         "victorias_defensor": 0,
         "victorias_atacante": 0
     }

@@ -66,19 +66,20 @@ columna_base = 9  # la base central queda fija en el extremo derecho
 # ECONOMIA
 # ============================================================
 dinero_inicial_defensor = 300
-dinero_inicial_atacante = 250
+dinero_inicial_atacante = 260
 dinero_extra_por_ronda = 100
 
 dinero_por_unidad_eliminada = 40
 dinero_por_dano_a_torre = 10
 dinero_por_torre_destruida = 50
-dinero_por_dano_a_base = 20
+dinero_por_ataque_a_base = 15
 
 
 # ============================================================
 # BASE Y MUROS
 # ============================================================
-vida_base = 300
+vida_base = 260
+dano_unidad_a_base = 20  # dano fijo que recibe la base por cada unidad que la este atacando, cada turno
 costo_muro = 30
 vida_muro = 50
 

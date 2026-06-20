@@ -2,63 +2,64 @@
 #Introduccion a la programación proyecto 2
 
 import os
-import tkinter as tk
 import config
 import recursos
 
 
-def ruta_boton(color):
+def archivo_boton(color, ancho):
     '''
-    #E: color (str): "azul", "gris", "rojo", "verde" o "amarillo"
-    #S: arma la ruta del archivo de imagen del boton de ese color
-    #R: retorna la ruta (str)
+    #E: color (str): "azul", "gris", "rojo", "verde", "amarillo";
+        ancho (int) deseado del boton
+    #S: elige el archivo de boton del tamano mas cercano al ancho
+        pedido. Hay tres tamanos: grande (g), mediano (m) y chico (c)
+    #R: retorna la ruta del archivo de imagen del boton
     '''
-    return os.path.join(config.ruta_ui_img, "boton_" + color + ".png")
+    if ancho >= 215:
+        sufijo = "g"
+    elif ancho >= 160:
+        sufijo = "m"
+    else:
+        sufijo = "c"
+    return os.path.join(config.ruta_ui_img, "boton_" + color + "_" + sufijo + ".png")
 
 
 class BotonImagen:
     '''
     Un boton dibujado sobre un Canvas: una imagen de fondo con el texto
-    encima, centrado. Cambia un poco de brillo al pasar el mouse y
+    encima, centrado. Cambia de color el texto al pasar el mouse y
     reproduce un sonido al hacer clic. Se usa para que los botones se
     vean iguales en todas las ventanas y el texto nunca se sobreponga.
     '''
 
     def __init__(self, canvas, x, y, texto, accion, color="azul",
-                 ancho=220, alto=58, tam_fuente=13):
+                 ancho=220, alto=52, tam_fuente=13):
         '''
-        #E: canvas (tk.Canvas) donde se dibuja, x e y (int) del centro
-            del boton, texto (str), accion (funcion) que se llama al
-            hacer clic, color (str) del boton, ancho y alto (int),
-            tam_fuente (int)
-        #S: dibuja la imagen del boton y su texto, y conecta los
-            eventos de mouse (entrar, salir, clic)
+        #E: canvas (tk.Canvas) donde se dibuja, x e y (int) del centro,
+            texto (str), accion (funcion) al hacer clic, color (str),
+            ancho y alto (int), tam_fuente (int)
+        #S: dibuja la imagen del boton y su texto centrado, y conecta
+            los eventos de mouse (entrar, salir, clic)
         #R: no retorna nada
         '''
         self.canvas = canvas
         self.accion = accion
 
-        imagen = recursos.cargar_imagen(ruta_boton(color))
+        imagen = recursos.cargar_imagen(archivo_boton(color, ancho))
 
         if imagen is not None:
-            # Subir el ancho/alto reales de la imagen para posicionar el texto
             self.id_imagen = canvas.create_image(x, y, image=imagen)
-            self.tiene_imagen = True
         else:
-            # Respaldo: un rectangulo de color
             colores = {"azul": "#3a8ac4", "gris": "#5a6072", "rojo": "#a83a3a",
                        "verde": "#3a9a5a", "amarillo": "#c9a24b"}
             relleno = colores.get(color, "#3a8ac4")
             self.id_imagen = canvas.create_rectangle(
                 x - ancho // 2, y - alto // 2, x + ancho // 2, y + alto // 2,
                 fill=relleno, outline="")
-            self.tiene_imagen = False
 
         self.id_texto = canvas.create_text(
             x, y, text=texto, fill="white",
             font=(config.fuente_normal, tam_fuente, "bold"))
 
-        # Conectar eventos a los dos elementos (imagen y texto)
         for id_elemento in (self.id_imagen, self.id_texto):
             canvas.tag_bind(id_elemento, "<Button-1>", self._al_hacer_clic)
             canvas.tag_bind(id_elemento, "<Enter>", self._al_entrar)

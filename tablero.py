@@ -141,3 +141,59 @@ def dibujar_unidades(canvas, lista_unidades, faccion_atacante, datos_facciones):
             radio = config.tamano_casilla // 2 - 12
             canvas.create_oval(x - radio, y - radio, x + radio, y + radio,
                                fill=config.color_morado, outline="white")
+
+
+def dibujar_resaltado_fila(canvas, fila, color):
+    '''
+    #E: canvas (tk.Canvas), fila (int) a resaltar, color (str)
+    #S: dibuja un marco semi-transparente sobre toda la fila, usado en
+        la fase de ataque para mostrar donde va a aparecer la unidad
+    #R: no retorna nada
+    '''
+    ancho = config.columnas_mapa * config.tamano_casilla
+    y_arriba = fila * config.tamano_casilla
+    y_abajo = y_arriba + config.tamano_casilla
+
+    canvas.create_rectangle(0, y_arriba, ancho, y_abajo, fill="", outline=color,
+                            width=3, tags="vista_previa")
+
+
+def dibujar_resaltado_casilla(canvas, fila, columna, color, valido):
+    '''
+    #E: canvas (tk.Canvas), fila (int), columna (int), color (str),
+        valido (bool) si la casilla esta libre o no
+    #S: dibuja un marco sobre la casilla bajo el cursor, en el color
+        de la faccion si esta libre, o en rojo si ya esta ocupada
+    #R: no retorna nada
+    '''
+    x = columna * config.tamano_casilla
+    y = fila * config.tamano_casilla
+    tamano = config.tamano_casilla
+
+    color_marco = color if valido else "#d65a5a"
+    canvas.create_rectangle(x + 2, y + 2, x + tamano - 2, y + tamano - 2,
+                            fill="", outline=color_marco, width=3, tags="vista_previa")
+
+
+def dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_pieza, valido):
+    '''
+    #E: canvas (tk.Canvas), fila (int), columna (int), carpeta (str) de
+        la faccion, nombre_pieza (str) ("torre", "muro" o "unidad"),
+        valido (bool) si se puede colocar ahi
+    #S: dibuja la imagen de la pieza seleccionada centrada en la
+        casilla bajo el cursor, mas transparente si no se puede colocar
+    #R: no retorna nada
+    '''
+    imagen = imagen_de_faccion(carpeta, nombre_pieza)
+    x, y = centro_de_casilla(fila, columna)
+
+    if imagen is not None:
+        # No se puede bajar la opacidad de un PhotoImage facilmente sin
+        # PIL, asi que usamos el marco de color para indicar si es
+        # valido o no, y aqui solo mostramos la imagen como referencia.
+        canvas.create_image(x, y, image=imagen, tags="vista_previa")
+    else:
+        radio = config.tamano_casilla // 2 - 10
+        relleno = config.color_dorado if valido else "#d65a5a"
+        canvas.create_oval(x - radio, y - radio, x + radio, y + radio,
+                           fill=relleno, outline="white", tags="vista_previa")

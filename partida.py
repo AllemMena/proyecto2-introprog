@@ -31,6 +31,25 @@ class Partida:
         self.victorias_atacante = 0
         self.fase = "construccion"
 
+    def reiniciar(self):
+        '''
+        #E: no recibe parametros
+        #S: deja la partida como recien empezada: tablero vacio, dinero
+            inicial, sin torres ni unidades, ronda 1 y marcador en cero
+        #R: no retorna nada
+        '''
+        self.tablero = tablero_mod.crear_tablero()
+        self.dinero_defensor = config.dinero_inicial_defensor
+        self.dinero_atacante = config.dinero_inicial_atacante
+        self.vida_base = config.vida_base
+        self.torres = []
+        self.unidades = []
+        self.vida_muros = {}
+        self.ronda_actual = 1
+        self.victorias_defensor = 0
+        self.victorias_atacante = 0
+        self.fase = "construccion"
+
     # ========================================================
     # FASE DE CONSTRUCCION
     # ========================================================
@@ -171,8 +190,8 @@ class Partida:
                 continue
 
             if unidad.columna == config.columna_base:
-                self.vida_base = self.vida_base - unidad.dano
-                self.dinero_atacante = self.dinero_atacante + config.dinero_por_dano_a_base
+                self.vida_base = self.vida_base - config.dano_unidad_a_base
+                self.dinero_atacante = self.dinero_atacante + config.dinero_por_ataque_a_base
                 continue
 
             if unidad.columna < config.columna_base:
