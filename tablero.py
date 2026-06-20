@@ -1,11 +1,9 @@
-'''
-Funciones para crear y dibujar el tablero del juego.
-El tablero es una matriz (lista de listas) de filas x columnas.
-Cada casilla guarda lo que hay ahi: None si esta vacia, o un
-texto como "base", "muro", "torre" o "unidad".
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
 
+import os
 import config
+import recursos
 
 
 def crear_tablero():
@@ -26,61 +24,120 @@ def crear_tablero():
     return tablero
 
 
-def color_de_casilla(contenido):
+def imagen_de_faccion(carpeta, nombre):
     '''
-    #E: contenido (str o None), lo que hay guardado en la casilla
-    #S: decide que color usar segun el tipo de contenido
-    #R: retorna un string con el color en formato hexadecimal
+    #E: carpeta (str) de la faccion (ej "medieval"), nombre (str) del
+        archivo sin extension (ej "torre")
+    #S: arma la ruta de la imagen de esa pieza y la carga
+    #R: retorna el PhotoImage, o None si no existe
     '''
-    if contenido == "base":
-        return "#c9a24b"
-    elif contenido == "muro":
-        return "#5a4a32"
-    elif contenido == "torre":
-        return "#7a1a1a"
-    elif contenido == "unidad":
-        return "#2a5a7a"
+    ruta = os.path.join(config.ruta_facciones_img, carpeta, nombre + ".png")
+    return recursos.cargar_imagen(ruta)
+
+
+def centro_de_casilla(fila, columna):
+    '''
+    #E: fila (int), columna (int)
+    #S: calcula las coordenadas x, y del centro de esa casilla en el canvas
+    #R: retorna una tupla (x, y)
+    '''
+    x = columna * config.tamano_casilla + config.tamano_casilla // 2
+    y = fila * config.tamano_casilla + config.tamano_casilla // 2
+    return x, y
+
+
+def dibujar_fondo(canvas, faccion_defensor, datos_facciones):
+    '''
+    #E: canvas (tk.Canvas), faccion_defensor (str), datos_facciones (dict)
+    #S: dibuja la imagen de fondo del mapa de la faccion del defensor,
+        cubriendo todo el canvas; si no hay imagen, usa un color liso
+    #R: no retorna nada
+    '''
+    nombre_fondo = datos_facciones[faccion_defensor]["fondo_mapa"]
+    ruta_fondo = os.path.join(config.ruta_mapa_img, nombre_fondo)
+    fondo = recursos.cargar_imagen(ruta_fondo)
+
+    if fondo is not None:
+        canvas.create_image(0, 0, image=fondo, anchor="nw")
     else:
-        return "#1a1a24"
+        ancho = config.columnas_mapa * config.tamano_casilla
+        alto = config.filas_mapa * config.tamano_casilla
+        canvas.create_rectangle(0, 0, ancho, alto, fill=config.color_canvas, outline="")
 
 
-def dibujar_tablero(canvas, tablero):
+def dibujar_lineas(canvas):
     '''
-    #E: canvas (tk.Canvas), tablero (matriz)
-    #S: recorre la matriz con dos for (uno por fila y otro por columna)
-        y dibuja un rectangulo por cada casilla, con su color segun
-        el contenido
+    #E: canvas (tk.Canvas)
+    #S: dibuja las lineas de la cuadricula encima del fondo, para que
+        se note la separacion de casillas
+    #R: no retorna nada
+    '''
+    ancho = config.columnas_mapa * config.tamano_casilla
+    alto = config.filas_mapa * config.tamano_casilla
+
+    for i in range(config.columnas_mapa + 1):
+        x = i * config.tamano_casilla
+        canvas.create_line(x, 0, x, alto, fill="#000000", stipple="gray25")
+
+    for i in range(config.filas_mapa + 1):
+        y = i * config.tamano_casilla
+        canvas.create_line(0, y, ancho, y, fill="#000000", stipple="gray25")
+
+
+def dibujar_tablero(canvas, tablero, faccion_defensor, datos_facciones):
+    '''
+    #E: canvas (tk.Canvas), tablero (matriz), faccion_defensor (str),
+        datos_facciones (dict)
+    #S: dibuja el fondo, la cuadricula, y encima la imagen que
+        corresponda a cada casilla (base, torre o muro) usando las
+        imagenes de la faccion del defensor
     #R: no retorna nada
     '''
     canvas.delete("all")
 
+    dibujar_fondo(canvas, faccion_defensor, datos_facciones)
+    dibujar_lineas(canvas)
+
+    carpeta = datos_facciones[faccion_defensor]["carpeta_assets"]
+
     for fila in range(config.filas_mapa):
         for columna in range(config.columnas_mapa):
-            x1 = columna * config.tamano_casilla
-            y1 = fila * config.tamano_casilla
-            x2 = x1 + config.tamano_casilla
-            y2 = y1 + config.tamano_casilla
-
             contenido = tablero[fila][columna]
-            color = color_de_casilla(contenido)
+            if contenido is None:
+                continue
 
-            canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="#0d0d12")
+            imagen = imagen_de_faccion(carpeta, contenido)
+            x, y = centro_de_casilla(fila, columna)
+
+            if imagen is not None:
+                canvas.create_image(x, y, image=imagen)
+            else:
+                # respaldo por si falta la imagen: un cuadro de color
+                mitad = config.tamano_casilla // 2 - 6
+                canvas.create_rectangle(x - mitad, y - mitad, x + mitad, y + mitad,
+                                        fill=config.color_dorado, outline="")
 
 
-def dibujar_unidades(canvas, lista_unidades):
+def dibujar_unidades(canvas, lista_unidades, faccion_atacante, datos_facciones):
     '''
-    #E: canvas (tk.Canvas), lista_unidades (list de Unidad)
-    #S: recorre la lista con un for y dibuja un circulo por cada
-        unidad que siga viva, en su posicion actual
+    #E: canvas (tk.Canvas), lista_unidades (list de Unidad),
+        faccion_atacante (str), datos_facciones (dict)
+    #S: recorre la lista con un for y dibuja la imagen de unidad de la
+        faccion del atacante por cada unidad que siga viva
     #R: no retorna nada
     '''
+    carpeta = datos_facciones[faccion_atacante]["carpeta_assets"]
+    imagen = imagen_de_faccion(carpeta, "unidad")
+
     for unidad in lista_unidades:
         if not unidad.esta_viva():
             continue
 
-        x1 = unidad.columna * config.tamano_casilla + 10
-        y1 = unidad.fila * config.tamano_casilla + 10
-        x2 = x1 + config.tamano_casilla - 20
-        y2 = y1 + config.tamano_casilla - 20
+        x, y = centro_de_casilla(unidad.fila, unidad.columna)
 
-        canvas.create_oval(x1, y1, x2, y2, fill="#2a5a7a", outline="#5ab0d8")
+        if imagen is not None:
+            canvas.create_image(x, y, image=imagen)
+        else:
+            radio = config.tamano_casilla // 2 - 12
+            canvas.create_oval(x - radio, y - radio, x + radio, y + radio,
+                               fill=config.color_morado, outline="white")

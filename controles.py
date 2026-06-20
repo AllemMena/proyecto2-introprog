@@ -1,8 +1,5 @@
-'''
-Maneja las teclas que el jugador presiona para elegir que va a colocar
-en el mapa (que tipo de torre, unidad o muro queda seleccionado antes
-de hacer clic en una casilla).
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
 
 # Guarda que esta seleccionado actualmente. Empieza en None porque
 # al inicio de la partida no hay nada seleccionado todavia.

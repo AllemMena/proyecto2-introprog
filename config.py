@@ -1,8 +1,5 @@
-'''
-Constantes globales del proyecto Defensa y Asalto de Base.
-Aqui se centralizan rutas de archivos, dimensiones de ventana
-y valores fijos de la economia del juego.
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
 
 import os
 
@@ -14,6 +11,12 @@ ruta_base = os.path.dirname(os.path.abspath(__file__))
 ruta_assets = os.path.join(ruta_base, "assets")
 ruta_datos = os.path.join(ruta_base, "datos")
 
+ruta_facciones_img = os.path.join(ruta_assets, "facciones")
+ruta_mapa_img = os.path.join(ruta_assets, "mapa")
+ruta_ui_img = os.path.join(ruta_assets, "ui")
+ruta_iconos_img = os.path.join(ruta_assets, "iconos")
+ruta_sonidos = os.path.join(ruta_assets, "sonidos")
+
 archivo_jugadores = os.path.join(ruta_datos, "jugadores.json")
 archivo_facciones = os.path.join(ruta_datos, "facciones.json")
 
@@ -24,6 +27,28 @@ archivo_facciones = os.path.join(ruta_datos, "facciones.json")
 titulo_ventana = "Defensa y Asalto de Base"
 ancho_ventana = 1100
 alto_ventana = 700
+
+# Paleta de colores usada en toda la interfaz
+color_fondo = "#11131a"
+color_panel = "#1c1f2b"
+color_panel_claro = "#262a38"
+color_texto = "#e8e8ec"
+color_texto_suave = "#9aa0b0"
+color_dorado = "#d4af6a"
+color_morado = "#a86bd6"
+color_borde = "#2a2e3d"
+color_canvas = "#181a24"
+
+# Fuente del titulo. Si no esta instalada, Tkinter usa una por defecto.
+fuente_titulo = "Cinzel"
+fuente_normal = "Segoe UI"
+
+
+# ============================================================
+# AUDIO
+# ============================================================
+volumen_efectos = 0.6
+volumen_musica = 0.4
 
 
 # ============================================================

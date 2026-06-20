@@ -1,13 +1,9 @@
-'''
-Clases para las torres y las unidades del juego.
-Se usa herencia basica: EntidadCombate es la clase padre,
-y de ella heredan Torre y Unidad. Despues, de Torre y de Unidad
-heredan los tipos especificos de cada una (TorreBasica, Soldado, etc).
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
 
 
 # ============================================================
-# Datos base de cada tipo de torre/unidad.
+# DICCIONARIOS con los datos base de cada tipo de torre/unidad.
 # Cada subclase busca aqui sus propios valores en vez de tenerlos
 # escritos sueltos en el codigo.
 # ============================================================

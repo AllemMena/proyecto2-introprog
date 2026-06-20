@@ -1,23 +1,20 @@
 {
   "medieval": {
-    "color_torre": "#8a7048",
-    "color_muro": "#5a4a32",
-    "color_unidad": "#6a5a3a",
-    "color_base": "#3a2f1f",
-    "carpeta_assets": "medieval"
+    "nombre": "Medieval",
+    "color_acento": "#c79a5b",
+    "carpeta_assets": "medieval",
+    "fondo_mapa": "fondo_medieval.png"
   },
   "futurista": {
-    "color_torre": "#3a8ac4",
-    "color_muro": "#2a5a7a",
-    "color_unidad": "#5ab0d8",
-    "color_base": "#1a3a4a",
-    "carpeta_assets": "futurista"
+    "nombre": "Futurista",
+    "color_acento": "#4aa3d6",
+    "carpeta_assets": "futurista",
+    "fondo_mapa": "fondo_futurista.png"
   },
   "oscura": {
-    "color_torre": "#4a2a5a",
-    "color_muro": "#2a1a32",
-    "color_unidad": "#7a3a8a",
-    "color_base": "#1a0d1f",
-    "carpeta_assets": "oscura"
+    "nombre": "Oscura",
+    "color_acento": "#a05ab0",
+    "carpeta_assets": "oscura",
+    "fondo_mapa": "fondo_oscura.png"
   }
 }

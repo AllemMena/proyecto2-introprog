@@ -1,7 +1,9 @@
-'''
-Clase Jugador: representa a un usuario registrado, con su
-informacion de cuenta y su historial de victorias.
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
+
+import json
+import os
+import config
 
 
 class Jugador:
@@ -59,3 +61,35 @@ def crear_jugador_desde_diccionario(datos):
         datos["victorias_defensor"],
         datos["victorias_atacante"],
     )
+
+
+def cargar_jugadores():
+    '''
+    #E: no recibe parametros
+    #S: revisa si el archivo de jugadores existe y lo lee. Si el archivo
+        esta vacio o dañado, json.load fallaria, por eso se protege con
+        try/except
+    #R: retorna el diccionario de jugadores (vacio si el archivo no
+        existe o no se pudo leer)
+    '''
+    if os.path.exists(config.archivo_jugadores):
+        archivo = open(config.archivo_jugadores, "r")
+        try:
+            datos = json.load(archivo)
+        except json.JSONDecodeError:
+            datos = {}
+        archivo.close()
+        return datos
+
+    return {}
+
+
+def guardar_jugadores(datos):
+    '''
+    #E: datos (dict) con todos los jugadores registrados
+    #S: escribe ese diccionario completo en el archivo JSON
+    #R: no retorna nada
+    '''
+    archivo = open(config.archivo_jugadores, "w")
+    json.dump(datos, archivo, indent=4)
+    archivo.close()

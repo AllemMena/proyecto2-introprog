@@ -1,8 +1,5 @@
-'''
-Maneja el estado completo de una partida: el tablero, el dinero de
-cada jugador, las torres y unidades colocadas, el avance del combate
-por turnos, y las rondas hasta que alguien gane 3.
-'''
+#Allem Mena Joel Alpizar
+#Introduccion a la programación proyecto 2
 
 import config
 import entidades

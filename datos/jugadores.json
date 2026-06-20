@@ -1,7 +1,13 @@
 {
-    "AlMeRu": {
-        "usuario": "AlMeRu",
-        "contrasena": "RobertoCarlos",
+    "Allem": {
+        "usuario": "Allem",
+        "contrasena": "contrase\u00f1a",
+        "victorias_defensor": 0,
+        "victorias_atacante": 1
+    },
+    "Joel": {
+        "usuario": "Joel",
+        "contrasena": "contra",
         "victorias_defensor": 0,
         "victorias_atacante": 0
     }
