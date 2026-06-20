@@ -65,3 +65,22 @@ def dibujar_tablero(canvas, tablero):
             color = color_de_casilla(contenido)
 
             canvas.create_rectangle(x1, y1, x2, y2, fill=color, outline="#0d0d12")
+
+
+def dibujar_unidades(canvas, lista_unidades):
+    '''
+    #E: canvas (tk.Canvas), lista_unidades (list de Unidad)
+    #S: recorre la lista con un for y dibuja un circulo por cada
+        unidad que siga viva, en su posicion actual
+    #R: no retorna nada
+    '''
+    for unidad in lista_unidades:
+        if not unidad.esta_viva():
+            continue
+
+        x1 = unidad.columna * config.tamano_casilla + 10
+        y1 = unidad.fila * config.tamano_casilla + 10
+        x2 = x1 + config.tamano_casilla - 20
+        y2 = y1 + config.tamano_casilla - 20
+
+        canvas.create_oval(x1, y1, x2, y2, fill="#2a5a7a", outline="#5ab0d8")
