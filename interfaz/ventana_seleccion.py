@@ -110,8 +110,8 @@ def elegir_faccion(nombre_jugador, facciones_disponibles, datos_facciones):
         lienzo.create_text(centro_x, tope + 28, text=datos["nombre"], fill=acento,
                            font=(config.fuente_normal, 15, "bold"))
 
-        # Vista previa: base, torre y unidad de la faccion
-        piezas = ["base", "torre", "unidad"]
+        # Vista previa: base, torre basica y soldado de la faccion
+        piezas = ["base", "torre_basica", "unidad_soldado"]
         etiquetas = ["Base", "Torre", "Unidad"]
         for j in range(3):
             ruta = os.path.join(config.ruta_facciones_img, carpeta, piezas[j] + ".png")

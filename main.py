@@ -307,17 +307,22 @@ def abrir_ventana_juego(jugador_defensor, jugador_atacante,
 
     def mapa_pieza_a_imagen(seleccion):
         '''
-        #E: seleccion (str) tipo seleccionado por el jugador
-        #S: traduce el tipo seleccionado al nombre de archivo de imagen
-            que le corresponde dentro de la carpeta de la faccion
-        #R: retorna "torre", "muro" o "unidad", o None si no aplica
+        #E: seleccion (str) tipo seleccionado por el jugador (ej
+            "basica", "muro", "tanque")
+        #S: traduce el tipo seleccionado al nombre exacto de archivo de
+            imagen dentro de la carpeta de la faccion
+        #R: retorna el nombre de archivo (str), o None si no aplica
         '''
         if seleccion in ("basica", "pesada", "magica"):
-            return "torre"
+            return "torre_" + seleccion
         elif seleccion == "muro":
             return "muro"
-        elif seleccion in ("soldado", "tanque", "rapida"):
-            return "unidad"
+        elif seleccion == "soldado":
+            return "unidad_soldado"
+        elif seleccion == "tanque":
+            return "unidad_tanque"
+        elif seleccion == "rapida":
+            return "unidad_rapida"
         return None
 
     def mover_mouse_en_canvas(evento):
@@ -340,8 +345,8 @@ def abrir_ventana_juego(jugador_defensor, jugador_atacante,
         if fila < 0 or fila >= config.filas_mapa or columna < 0 or columna >= config.columnas_mapa:
             return
 
-        nombre_pieza = mapa_pieza_a_imagen(seleccion)
-        if nombre_pieza is None:
+        nombre_archivo = mapa_pieza_a_imagen(seleccion)
+        if nombre_archivo is None:
             return
 
         if partida_actual.fase == "construccion":
@@ -349,12 +354,12 @@ def abrir_ventana_juego(jugador_defensor, jugador_atacante,
             libre = partida_actual.tablero[fila][columna] is None
             tablero.dibujar_resaltado_casilla(canvas, fila, columna, config.color_dorado, libre)
             if libre:
-                tablero.dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_pieza, True)
+                tablero.dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_archivo, True)
 
         elif partida_actual.fase == "ataque":
             carpeta = datos_facciones[faccion_atacante]["carpeta_assets"]
             tablero.dibujar_resaltado_fila(canvas, fila, config.color_morado)
-            tablero.dibujar_vista_previa_pieza(canvas, fila, 0, carpeta, nombre_pieza, True)
+            tablero.dibujar_vista_previa_pieza(canvas, fila, 0, carpeta, nombre_archivo, True)
 
     def guardar_resultado_partida(ganador):
         '''

@@ -69,7 +69,7 @@ class Partida:
             return False
 
         torre_nueva.colocar(fila, columna)
-        self.tablero[fila][columna] = "torre"
+        self.tablero[fila][columna] = tipo
         self.torres.append(torre_nueva)
         self.dinero_defensor = self.dinero_defensor - torre_nueva.costo
         return True
@@ -201,7 +201,7 @@ class Partida:
 
             contenido = self.tablero[unidad.fila][siguiente_columna]
 
-            if contenido == "torre":
+            if contenido in ("basica", "pesada", "magica"):
                 self.atacar_torre(unidad, siguiente_columna)
 
             elif contenido == "muro":

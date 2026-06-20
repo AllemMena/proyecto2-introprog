@@ -27,7 +27,7 @@ def crear_tablero():
 def imagen_de_faccion(carpeta, nombre):
     '''
     #E: carpeta (str) de la faccion (ej "medieval"), nombre (str) del
-        archivo sin extension (ej "torre")
+        archivo sin extension (ej "torre_basica")
     #S: arma la ruta de la imagen de esa pieza y la carga
     #R: retorna el PhotoImage, o None si no existe
     '''
@@ -84,13 +84,30 @@ def dibujar_lineas(canvas):
         canvas.create_line(0, y, ancho, y, fill="#000000", stipple="gray25")
 
 
+def nombre_archivo_pieza(contenido):
+    '''
+    #E: contenido (str) lo que hay en una casilla del tablero: "base",
+        "muro", "basica", "pesada" o "magica"
+    #S: traduce ese contenido al nombre de archivo de imagen que le
+        corresponde dentro de la carpeta de la faccion
+    #R: retorna el nombre de archivo (str), sin extension
+    '''
+    if contenido == "base":
+        return "base"
+    elif contenido == "muro":
+        return "muro"
+    elif contenido in ("basica", "pesada", "magica"):
+        return "torre_" + contenido
+    return contenido
+
+
 def dibujar_tablero(canvas, tablero, faccion_defensor, datos_facciones):
     '''
     #E: canvas (tk.Canvas), tablero (matriz), faccion_defensor (str),
         datos_facciones (dict)
     #S: dibuja el fondo, la cuadricula, y encima la imagen que
-        corresponda a cada casilla (base, torre o muro) usando las
-        imagenes de la faccion del defensor
+        corresponda a cada casilla (base, torre segun su tipo, o muro)
+        usando las imagenes de la faccion del defensor
     #R: no retorna nada
     '''
     canvas.delete("all")
@@ -106,7 +123,7 @@ def dibujar_tablero(canvas, tablero, faccion_defensor, datos_facciones):
             if contenido is None:
                 continue
 
-            imagen = imagen_de_faccion(carpeta, contenido)
+            imagen = imagen_de_faccion(carpeta, nombre_archivo_pieza(contenido))
             x, y = centro_de_casilla(fila, columna)
 
             if imagen is not None:
@@ -118,21 +135,36 @@ def dibujar_tablero(canvas, tablero, faccion_defensor, datos_facciones):
                                         fill=config.color_dorado, outline="")
 
 
+def nombre_archivo_unidad(unidad):
+    '''
+    #E: unidad (Unidad)
+    #S: traduce el nombre de la unidad al archivo de imagen que le
+        corresponde dentro de la carpeta de la faccion
+    #R: retorna el nombre de archivo (str), sin extension
+    '''
+    mapa_nombres = {
+        "Soldado": "unidad_soldado",
+        "Tanque": "unidad_tanque",
+        "Unidad Rapida": "unidad_rapida",
+    }
+    return mapa_nombres.get(unidad.nombre, "unidad_soldado")
+
+
 def dibujar_unidades(canvas, lista_unidades, faccion_atacante, datos_facciones):
     '''
     #E: canvas (tk.Canvas), lista_unidades (list de Unidad),
         faccion_atacante (str), datos_facciones (dict)
-    #S: recorre la lista con un for y dibuja la imagen de unidad de la
-        faccion del atacante por cada unidad que siga viva
+    #S: recorre la lista con un for y dibuja la imagen que le
+        corresponde a cada tipo de unidad viva, con la faccion del atacante
     #R: no retorna nada
     '''
     carpeta = datos_facciones[faccion_atacante]["carpeta_assets"]
-    imagen = imagen_de_faccion(carpeta, "unidad")
 
     for unidad in lista_unidades:
         if not unidad.esta_viva():
             continue
 
+        imagen = imagen_de_faccion(carpeta, nombre_archivo_unidad(unidad))
         x, y = centro_de_casilla(unidad.fila, unidad.columna)
 
         if imagen is not None:
@@ -175,22 +207,20 @@ def dibujar_resaltado_casilla(canvas, fila, columna, color, valido):
                             fill="", outline=color_marco, width=3, tags="vista_previa")
 
 
-def dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_pieza, valido):
+def dibujar_vista_previa_pieza(canvas, fila, columna, carpeta, nombre_archivo, valido):
     '''
     #E: canvas (tk.Canvas), fila (int), columna (int), carpeta (str) de
-        la faccion, nombre_pieza (str) ("torre", "muro" o "unidad"),
-        valido (bool) si se puede colocar ahi
+        la faccion, nombre_archivo (str) el archivo exacto a mostrar
+        (ej "torre_basica", "muro", "unidad_tanque"), valido (bool) si
+        se puede colocar ahi
     #S: dibuja la imagen de la pieza seleccionada centrada en la
-        casilla bajo el cursor, mas transparente si no se puede colocar
+        casilla bajo el cursor
     #R: no retorna nada
     '''
-    imagen = imagen_de_faccion(carpeta, nombre_pieza)
+    imagen = imagen_de_faccion(carpeta, nombre_archivo)
     x, y = centro_de_casilla(fila, columna)
 
     if imagen is not None:
-        # No se puede bajar la opacidad de un PhotoImage facilmente sin
-        # PIL, asi que usamos el marco de color para indicar si es
-        # valido o no, y aqui solo mostramos la imagen como referencia.
         canvas.create_image(x, y, image=imagen, tags="vista_previa")
     else:
         radio = config.tamano_casilla // 2 - 10
